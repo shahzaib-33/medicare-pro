@@ -5,6 +5,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-2022
@@ -47,3 +50,12 @@ jobs:
         with:
           name: MediCarePro-Setup
           path: dist/*.exe
+      - name: Publish download
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Compress-Archive -Path dist/MediCare_Pro_Setup.exe -DestinationPath dist/MediCare_Pro_Setup.zip -Force
+          gh release create "build-${{ github.run_number }}" dist/MediCare_Pro_Setup.zip dist/MediCare_Pro_Setup.exe `
+            --title "MediCare Pro build ${{ github.run_number }}" --latest `
+            --notes "Windows 10 and 11, 64-bit. Unzip, run MediCare_Pro_Setup.exe and follow the steps."
