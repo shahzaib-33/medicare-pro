@@ -474,7 +474,8 @@ CREATE TABLE IF NOT EXISTS prescription_items (
     qty INTEGER,
     directions TEXT
 );
-
+)SQL"
+R"SQL(
 CREATE TABLE IF NOT EXISTS sales (
     id INTEGER PRIMARY KEY,
     invoice_no TEXT NOT NULL UNIQUE,
