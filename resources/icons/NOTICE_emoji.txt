@@ -1,0 +1,4 @@
+The app icon is the pill emoji (U+1F48A) rendered from Noto Color Emoji.
+Noto Emoji images: Copyright 2013-2017 Google Inc. Licensed under the Apache License, Version 2.0.
+https://github.com/googlefonts/noto-emoji
+https://www.apache.org/licenses/LICENSE-2.0

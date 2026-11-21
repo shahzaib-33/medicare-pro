@@ -1,0 +1,49 @@
+# Builds, tests and packages the Windows installer on GitHub.
+# Push this project to a GitHub repo, then download the installer from the run's Artifacts.
+name: Windows build
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.3'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtcharts'
+          tools: 'tools_opensslv3_x64'
+          cache: true
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="$env:IQTA_TOOLS/OpenSSLv3/Win_x64"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $env:PATH = "$env:IQTA_TOOLS/OpenSSLv3/Win_x64/bin;$env:PATH"
+          ctest --test-dir build --output-on-failure
+      - name: Deploy
+        run: |
+          New-Item -ItemType Directory -Force deploy/refdata | Out-Null
+          Copy-Item build/MediCarePro.exe deploy/
+          windeployqt --release --no-compiler-runtime --no-opengl-sw deploy/MediCarePro.exe
+          Copy-Item "$env:IQTA_TOOLS/OpenSSLv3/Win_x64/bin/libcrypto-3-x64.dll" deploy/
+          Copy-Item "$env:IQTA_TOOLS/OpenSSLv3/Win_x64/bin/libssl-3-x64.dll" deploy/
+          $env:PATH = "$env:IQTA_TOOLS/OpenSSLv3/Win_x64/bin;$env:PATH"
+          ./build/refpack.exe import --db deploy/refdata/reference_seed.db --csv data/sample/sample_catalog.csv --source-code sample --source-name "MediCare Pro demonstration sample" --sample --coverage "Sample data for first run only."
+          Remove-Item deploy/refdata/*.db-wal, deploy/refdata/*.db-shm -ErrorAction SilentlyContinue
+          Copy-Item "$env:VCToolsRedistDir/x64/Microsoft.VC143.CRT/*.dll" deploy/
+      - name: Installer
+        run: |
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\MediCarePro.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MediCarePro-Setup
+          path: dist/*.exe
